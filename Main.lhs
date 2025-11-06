@@ -1,5 +1,5 @@
 > import Geography
-> import Maze
+> import BetterMaze
 
 ======================================================================
 
@@ -14,16 +14,15 @@ Draw a maze.
 > interleave (x:xs) (y:ys) = (x:y:interleave xs ys)
 > interleave x [] = x
 > interleave [] y = y
-> interleave [] [] = []
 
 > interleaveReverse = flip interleave
 
 > drawMaze :: Maze -> IO()
 > drawMaze maze = putStr(concat (interleave (reverse horzRows) (reverse vertRows)))
 >     where
->        horzRows = map (interleave (['+' | x <- [(-1)..(m-1)]] ++ ['\n'])) (map (drawRow N '_' (n+1)) [(-1)..(m-2)])
->        vertRows = map (interleaveReverse ([' ' | x <- [0..(m)]] ++ ['\n'])) (map (drawRow W '|' (n+1)) [0..(m-2)])
->        (m,n) = sizeOf maze
+>        horzRows = map (interleave (['+' | x <- [0..(n)]] ++ ['\n'])) (map (drawRow N '_' (n-1)) [(-1)..(m-1)])
+>        vertRows = map (interleaveReverse ([' ' | x <- [0..(n-1)]] ++ ['\n'])) (map (drawRow W '|' (n)) [0..(m-1)])
+>        (n,m) = sizeOf maze
 >        drawRow :: Direction -> Char -> Int -> Int -> [Char]
 >        drawRow dir c maxColumn row = (map (charSubst dir c row) [0..(maxColumn)])
 >        charSubst :: Direction -> Char -> Int -> Int -> Char
@@ -74,6 +73,7 @@ Otherwise just run the next iteration, iterating each path by one using iterPath
 > fastSolveMaze maze start target = reverse (fastSolveMazeIter maze target [(start,[])] [start])
 
 > fastSolveMazeIter :: Maze -> Place -> [(Place, Path)] -> [Place] -> Path
+> fastSolveMazeIter maze target [] visited = error "No target in sight. I will search for other routes. Communication over."
 > fastSolveMazeIter maze target prevPaths visited | any eqTarget prevPaths = (snd . head . (filter eqTarget)) prevPaths
 >                                                 | otherwise = fastSolveMazeIter maze target ((concat . map iterPath) prevPaths) ((concat . map iterPlaces) prevPaths ++ visited)
 >     where
@@ -162,3 +162,6 @@ And now an impossible maze
 > impossibleMaze =
 >   let walls = [((0,1), E), ((1,0),N), ((1,2), E), ((2,1), N)]
 >   in makeMaze (3,3) walls
+
+> trivialMaze :: Maze
+> trivialMaze = makeMaze (1,1) []
