@@ -19,7 +19,7 @@ Draw a maze.
 > interleaveReverse = flip interleave
 
 > drawMaze :: Maze -> IO()
-> drawMaze maze = putStr(concat (interleave horzRows vertRows))
+> drawMaze maze = putStr(concat (interleave (reverse horzRows) (reverse vertRows)))
 >     where
 >        horzRows = map (interleave (['+' | x <- [(-1)..(m-1)]] ++ ['\n'])) (map (drawRow N '_' (n+1)) [(-1)..(m-2)])
 >        vertRows = map (interleaveReverse ([' ' | x <- [0..(m)]] ++ ['\n'])) (map (drawRow W '|' (n+1)) [0..(m-2)])
@@ -30,8 +30,14 @@ Draw a maze.
 >        charSubst dir c j i | hasWall maze (i,j) dir = c
 >                            | otherwise = ' '
 
-# I never want to see this code again
-# It waits for me in hell
+I never want to see this code again
+It waits for me in hell
+High level
+
+for each horizRow maps whether it is ' ' or _ then interleave with +
+for each vertRow map whether it is ' ' or | then interleave with spaces
+
+then interleave the horizontal and vertical rows
 
 ======================================================================
 
@@ -47,10 +53,38 @@ Solve the maze, giving a result of type:
 
 > solveMaze :: Maze -> Place -> Place -> Path
 > solveMaze maze start (-42,-42) = error "I'm lost!  Please help me!"
-> solveMaze maze start target = 
+> solveMaze maze start target = reverse (solveMazeIter maze target [(start,[])]) 
 
 > solveMazeIter :: Maze -> Place -> [(Place, Path)] -> Path
-> solveMazeIter maze target prevPath | currLoc == target = prevPath
+> solveMazeIter maze target prevPaths | any eqTarget prevPaths = (snd . head . (filter eqTarget)) prevPaths
+>                                     | otherwise = solveMazeIter maze target ((concat . map iterPath) prevPaths)
+>     where
+>         eqTarget :: (Place, Path) -> Bool
+>         eqTarget (place, path) = target == place
+>         iterPath :: (Place, Path) -> [(Place, Path)]
+>         iterPath (place, path) = [(move x place,(x:path)) | x <- [N,E,S,W] , not (hasWall maze place x)]
+
+high level 
+check if any element has first element equal to the target and return if that's the case
+Otherwise just run the next iteration, iterating each path by one using iterPath
+
+
+> fastSolveMaze :: Maze -> Place -> Place -> Path
+> fastSolveMaze maze start (-42,-42) = error "I'm lost!  Please help me!"
+> fastSolveMaze maze start target = reverse (fastSolveMazeIter maze target [(start,[])] [start])
+
+> fastSolveMazeIter :: Maze -> Place -> [(Place, Path)] -> [Place] -> Path
+> fastSolveMazeIter maze target prevPaths visited | any eqTarget prevPaths = (snd . head . (filter eqTarget)) prevPaths
+>                                                 | otherwise = fastSolveMazeIter maze target ((concat . map iterPath) prevPaths) ((concat . map iterPlaces) prevPaths ++ visited)
+>     where
+>         eqTarget :: (Place, Path) -> Bool
+>         eqTarget (place, path) = target == place
+>         iterPath :: (Place, Path) -> [(Place, Path)]
+>         iterPath (place, path) = [(move x place,(x:path)) | x <- [N,E,S,W] , worthVisiting place x]
+>         iterPlaces :: (Place, Path) -> [Place]
+>         iterPlaces (place, path) = [move x place | x <- [N,E,S,W] , worthVisiting place x]
+>         worthVisiting :: Place -> Direction -> Bool
+>         worthVisiting place x = (not (hasWall maze place x)) && (notElem (move x place) visited)
 
 ======================================================================
 
