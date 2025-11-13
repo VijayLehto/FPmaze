@@ -1,5 +1,5 @@
 > import Geography
-> import BetterMaze
+> import Maze
 
 ======================================================================
 
@@ -165,3 +165,8 @@ And now an impossible maze
 
 > trivialMaze :: Maze
 > trivialMaze = makeMaze (1,1) []
+
+> prettyMaze :: Int -> Maze
+> prettyMaze n = 
+>     let walls = concat (map (\x -> run (x,0) x E) [2*x+1 | x <- [1..n]]) ++ concat (map (\y -> run (0,y) y N) [2*y | y<- [1..n]])
+>     in makeMaze (n,n) walls

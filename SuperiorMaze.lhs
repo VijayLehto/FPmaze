@@ -1,5 +1,6 @@
 Module to define the type of a maze
 
+
 > module SuperiorMaze (
 >   Maze, 
 >   makeMaze, -- :: Size -> [Wall] -> Maze
@@ -9,16 +10,17 @@ Module to define the type of a maze
 > where
 
 > import Geography
+> import Data.List
 
 We will represent a maze by its size and a list of its walls.
 
 
 > data Tree a = Nil | Cons (Tree a) a (Tree a)
 
-> insert :: Ord a => a -> (Tree a) -> (Tree a)
-> insert x Nil = (Cons Nil x Nil)
-> insert x (Cons l m r) | x < m = (Cons (insert x l) m r)
->                       | x > m = (Cons l m (insert x r))
+> treeInsert :: Ord a => a -> (Tree a) -> (Tree a)
+> treeInsert x Nil = (Cons Nil x Nil)
+> treeInsert x (Cons l m r) | x < m = (Cons (treeInsert x l) m r)
+>                       | x > m = (Cons l m (treeInsert x r))
 >                       | x == m = error "Oopsies"
 
 > inTree :: Ord a => a -> (Tree a) -> Bool
@@ -26,6 +28,16 @@ We will represent a maze by its size and a list of its walls.
 > inTree x (Cons l m r) | x < m = inTree x l
 >                       | x > m = inTree x r
 >                       | x == m = True
+
+> balancedTree :: Ord a => [a] -> (Tree a)
+> balancedTree [] = Nil
+> balancedTree x = Cons (balancedTree l) m (balancedTree r)
+>     where
+>         n = length x
+>         sortedl = sort x
+>         (l, m, r) = splitMiddle sortedl
+>         splitMiddle :: [a] -> ([a],a,[a])
+>         splitMiddle x = (take (n `div` 2) x, x !! (n `div` 2),drop (1 + n `div` 2) x)
 
 > data Maze = Maze Size (Tree Place) (Tree Place) (Tree Place) (Tree Place)
 
@@ -44,10 +56,10 @@ the list of walls might not be complete in the above sense.
 >         eastBoundary = [((x-1,j),E) | j <- [0..y-1]]
 >         southBoundary = [((i,0),S)| i <- [0..x-1]]
 >         northBoundary = [((i,y-1),N) | i <- [0..x-1]]
->         northWalls =  ((foldr insert Nil) . conv) (northBoundary ++ (filter (inDir N)) walls ++ ((filter (inDir N)) . (map reflect)) (southBoundary ++ walls))
->         eastWalls = ((foldr insert Nil) . conv) (eastBoundary ++ (filter (inDir E)) walls ++ ((filter (inDir E)) . (map reflect)) (westBoundary ++ walls))
->         southWalls = ((foldr insert Nil) . conv) (southBoundary ++ (filter (inDir S)) walls ++ ((filter (inDir S)) . (map reflect)) (northBoundary ++ walls))
->         westWalls = ((foldr insert Nil) . conv) (westBoundary ++ (filter (inDir W)) walls ++ ((filter (inDir W)) . (map reflect)) (eastBoundary ++ walls))
+>         northWalls =  (balancedTree . conv) (northBoundary ++ (filter (inDir N)) walls ++ ((filter (inDir N)) . (map reflect)) (southBoundary ++ walls))
+>         eastWalls = (balancedTree . conv) (eastBoundary ++ (filter (inDir E)) walls ++ ((filter (inDir E)) . (map reflect)) (westBoundary ++ walls))
+>         southWalls = (balancedTree . conv) (southBoundary ++ (filter (inDir S)) walls ++ ((filter (inDir S)) . (map reflect)) (northBoundary ++ walls))
+>         westWalls = (balancedTree . conv) (westBoundary ++ (filter (inDir W)) walls ++ ((filter (inDir W)) . (map reflect)) (eastBoundary ++ walls))
 >         inDir :: Direction -> Wall -> Bool
 >         inDir dir wall = dir == snd wall
 >         conv :: [(a,b)] -> [a]
